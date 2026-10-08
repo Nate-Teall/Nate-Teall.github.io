@@ -37,9 +37,9 @@ def vis(a, b, diff=None, helper=None):
     plt.plot(a_closed[:, 0], a_closed[:, 1], color='blue', label='A')
     plt.plot(b_closed[:, 0], b_closed[:, 1], color='orange', label='B')
 
-    if diff:
-        plt.scatter(diff[:, 0], diff[:, 1], color='red', label='Difference')
-    if helper:
+    if diff is not None:
+        plt.scatter(diff[:, 0], diff[:, 1], color='red', label='Difference', s=9)
+    if helper is not None:
         plt.scatter(helper[:, 0], helper[:, 1], color='green', label='helper')
 
     plt.title("GJK Output")
@@ -48,10 +48,20 @@ def vis(a, b, diff=None, helper=None):
 
     plt.show()
 
+def minkowski_difference(a, b):
+    # A is N x 2, a[newaxis, :,:] becomes 1 x N x 2
+    # B is M x 2, b[:, newaxis, :] becomes M x 1 x 2  
+    # Result is M x N x 2
+
+    # this syntax confuses me. broadcasting allows the non-same shape mats to be subtracted
+    diff = a[np.newaxis, :, :] - b[:, np.newaxis, :] 
+    return diff.reshape(-1, 2) # flatten result to be a list of points
+
 def main():
     a, b = read_input('tri_square_1.txt')
 
-    vis(a, b)
+    diff = minkowski_difference(a, b)
+    vis(a, b, diff)
 
 if __name__ == "__main__":
     main()
