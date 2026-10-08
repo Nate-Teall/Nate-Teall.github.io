@@ -40,7 +40,7 @@ def vis(a, b, diff=None, helper=None):
     if diff is not None:
         plt.scatter(diff[:, 0], diff[:, 1], color='red', label='Difference', s=9)
     if helper is not None:
-        plt.scatter(helper[:, 0], helper[:, 1], color='green', label='helper')
+        plt.scatter(helper[0], helper[1], color='green', label='helper')
 
     plt.title("GJK Output")
     plt.legend(loc='upper right')
@@ -53,15 +53,34 @@ def minkowski_difference(a, b):
     # B is M x 2, b[:, newaxis, :] becomes M x 1 x 2  
     # Result is M x N x 2
 
-    # this syntax confuses me. broadcasting allows the non-same shape mats to be subtracted
+    # this syntax confuses me. "broadcasting" allows the non-same shape mats to be subtracted
     diff = a[np.newaxis, :, :] - b[:, np.newaxis, :] 
     return diff.reshape(-1, 2) # flatten result to be a list of points
 
+def find_furthest_point(poly, dir):
+    """Finds the furthest point on a polygon in a given direction (O(n)).
+
+    :param poly: The 2D points of the polygon. Must be a Nx2 array
+    :param dir: The direction to point in. MUST be normalized"""
+    # Create a Nx1 array, each element is the dot product of a point in poly * dir
+    distances = np.dot(poly, dir)
+    # Find the index of the maximum distance, and return that point
+    print(poly[np.argmax(distances)])
+    return poly[np.argmax(distances)]
+
+
+def support(a, b, dir):
+    dir = dir / np.linalg.norm(dir)
+    return find_furthest_point(a, dir) - find_furthest_point(b, -dir)
+
 def main():
-    a, b = read_input('tri_square_1.txt')
+    a, b = read_input('tri_square_col.txt')
 
     diff = minkowski_difference(a, b)
-    vis(a, b, diff)
+
+    test = support(a, b, np.array([-1, 0]) )
+    print(test)
+    vis(a, b, diff, test)
 
 if __name__ == "__main__":
     main()
