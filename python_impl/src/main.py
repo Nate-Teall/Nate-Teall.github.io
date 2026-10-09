@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.axes as axs
 
 def read_input(filename):
     a = []
@@ -21,7 +22,7 @@ def read_input(filename):
 
     return (a, b)
 
-def vis(a, b, diff=None, helper=None):
+def vis(a, b, diff=None, helper=None, dir=None):
     # Set axis bounds
     plt.xlim(-5, 5)
     plt.ylim(-5, 5)
@@ -41,10 +42,16 @@ def vis(a, b, diff=None, helper=None):
         plt.scatter(diff[:, 0], diff[:, 1], color='red', label='Difference', s=9)
     if helper is not None:
         if np.size(helper, 0) == 1:
-            plt.scatter(helper[:, 0], helper[:, 1], color='green', label='helper')
+            plt.scatter(helper[:, 0], helper[:, 1], color='green', label='Helper')
         else:
-            helper = np.append(helper, [helper[0]], axis=0) # close helper and draw the simplex
-            plt.plot(helper[:, 0], helper[:, 1], color='green', label='helper')
+            helper_closed = np.append(helper, [helper[0]], axis=0)
+            plt.plot(helper_closed[:, 0], helper_closed[:, 1], color='green', label='Helper')
+
+        if dir is not None:
+            dir = dir / np.linalg.norm(dir)
+            last_pt = helper[-1]
+            arrow=[last_pt[0] + dir[0], last_pt[1] + dir[1]]
+            plt.annotate(text="", xytext=last_pt, xy=arrow, arrowprops=dict(arrowstyle="->"), label='Search Direction')
 
     plt.title("GJK Output")
     plt.legend(loc='upper right')
@@ -65,7 +72,7 @@ def find_furthest_point(poly, dir):
     """Finds the furthest point on a polygon in a given direction (O(n)).
 
     :param poly: The 2D points of the polygon. Must be a Nx2 array
-    :param dir: The direction to search in. MUST be normalized"""
+    :param dir: The direction to search in"""
     # Create a Nx1 array, each element is the dot product of a point in poly * dir
     distances = np.dot(poly, dir)
     # Find the index of the maximum distance, and return that point
@@ -73,7 +80,8 @@ def find_furthest_point(poly, dir):
 
    
 def support(a, b, dir):
-    dir = dir / np.linalg.norm(dir)
+    # Does dir need to be normalized?
+    # dir = dir / np.linalg.norm(dir)
     return find_furthest_point(a, dir) - find_furthest_point(b, -dir)
 
 def same_dir(dir1, dir2):
@@ -193,7 +201,7 @@ def GJK(a, b):
     # Consider making this a class?
     # simplex_data = {'points': s, 'dir': dir}
 
-    vis(a, b, diff, next_support[np.newaxis, :])
+    vis(a, b, diff, next_support[np.newaxis, :], dir)
 
     while True:
         next_support = support(a, b, dir)
@@ -209,9 +217,9 @@ def GJK(a, b):
         #       I did NOT check for this, but works with my two tests
         s.append(next_support)
 
-        vis(a, b, diff, np.array(s))
-
         s, dir, contains_origin = nearest_simplex(s)
+
+        vis(a, b, diff, np.array(s), dir)
 
         # If the newly created simplex covers the origin, return true
         if contains_origin:
