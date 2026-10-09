@@ -86,7 +86,7 @@ def support(a, b, dir):
 
 def same_dir(dir1, dir2):
     """Helper function that checks if two points are in the same direction"""
-    return np.dot(dir1, dir2) > 0
+    return np.dot(dir1, dir2) > 0 # the > vs >= is significant here
 
 def line(s):
     """Given two points, find find the next search direction, updating the simplex if necessary"""
@@ -110,7 +110,7 @@ def line(s):
         dir = np.cross(np.cross(ab, ao), ab)
 
         # Edge case: if the cross product is zero, then the origin is on this line! We're done!
-        if dir[0] * dir[1] * dir[2] == 0:
+        if np.sum(dir) == 0:
             return s, ao, True
 
         # Before returning, make the direction 2D again. I think dropping the Z value should always be fine? I think its always 0
@@ -227,7 +227,7 @@ def GJK(a, b):
 
 
 def main():
-    a, b = read_input('tri_square_e2e.txt')
+    a, b = read_input('tri_square_p2e.txt')
 
     # diff = minkowski_difference(a, b)
 
