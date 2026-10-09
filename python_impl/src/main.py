@@ -40,7 +40,11 @@ def vis(a, b, diff=None, helper=None):
     if diff is not None:
         plt.scatter(diff[:, 0], diff[:, 1], color='red', label='Difference', s=9)
     if helper is not None:
-        plt.scatter(helper[:, 0], helper[:, 1], color='green', label='helper')
+        if np.size(helper, 0) == 1:
+            plt.scatter(helper[:, 0], helper[:, 1], color='green', label='helper')
+        else:
+            helper = np.append(helper, [helper[0]], axis=0) # close helper and draw the simplex
+            plt.plot(helper[:, 0], helper[:, 1], color='green', label='helper')
 
     plt.title("GJK Output")
     plt.legend(loc='upper right')
@@ -76,40 +80,97 @@ def same_dir(dir1, dir2):
     """Helper function that checks if two points are in the same direction"""
     return np.dot(dir1, dir2) > 0
 
-def build_from_line(simplex_data):
-    """Given two points, find the next closest point to the origin"""
-    points = simplex_data['points']
-    b = points[0]
-    a = points[1]
+def line(s):
+    """Given two points, find find the next search direction, updating the simplex if necessary"""
+    b = s[0]
+    a = s[1]
 
     # Because we started with B and went to A, we know the origin cannot be on the side of B.
     # So, we have two regions to check: in between B and A, or On the side of A
 
-    ab = b - a # dir from b to a
+    ab = b - a # dir from a to b
     ao = -a # dir from a to origin
 
-    if not same_dir(ab, ao):
+    if same_dir(ab, ao):
+        # First case, the origin is between A and B, so both points remain on the simplex
+
+        # we must also find the direction from the line to the origin
+        # To get the facing direction of the line to the origin, I am using 3D cross products (i don't know a different way, and this applies to 3D)
+        # so, I am converting the 2D point to a 3D one for this
+        ab = np.append(ab, 0)
+        ao = np.append(ao, 0)
+        dir = np.cross(np.cross(ab, ao), ab)
+
+        # Before returning, make the direction 2D again. I think removing the Z value should always be fine? I think its always 0
+        assert(dir[2] == 0)
+        dir = dir[:2]
+    else:
         # Second case, the origin is further in the direction of a,
         # so b is not in our simplex
-        simplex_data['points'] = [a]
+        s = [a]
+        dir = ao
 
-        # Otherwise, the origin is between the two, so both of our points remain in the simplex
+    return s, dir, False
 
-    # Our next direction to the origin
-    simplex_data['dir'] = ao
+def triangle(s):
+    """Given three points (our simplex), determine the next search direction,
+    updating the simplex as necessary"""
+    c = s[0]
+    b = s[1]
+    a = s[2]
 
-    return False
+    # Once again, we can cull some cases, knowing that A was our most recent point
+    # Knowing this, the direction of face BC cannot be the direction
 
+    # similar to line(), im using 3D cross products...
+    # For our full implementation of 2D and 3D, we should just have every input point in 3D, with z=0 if using 2D polys 
+    ac = np.append(c - a, 0)
+    ab = np.append(b - a, 0)
+    ao = np.append(-a, 0)
 
-def next_simplex(simplex_data):
+    # So, start by checking the facing direction of edge AC
+
+    # Something like this...
+    #         C |\
+    #   ac_dir  |  \
+    #  <------  |    \
+    #           |    / B
+    #           |  /
+    #         A |/
+
+    abc = np.cross(ab, ac)
+    ac_dir = np.cross(abc, ac)
+    ab_dir = np.cross(ab, abc)
+
+    assert(ac_dir[2] == 0)
+    assert(ab_dir[2] == 0)
+
+    if same_dir(ac_dir, ao):
+        # Next, check if it is the direction of AC
+        if same_dir(ac, ao):
+            # completely on the side of AC, so we discard B then get next point 
+            return [c, a], ac_dir[:2], False # direction might be wrong
+        else:
+            return line([b, a])
+    else:
+        # here, the origin is NOT on the side of AC, so check the ab face
+        if same_dir(ab_dir, ao):
+            # completely on the side of AB but not AC, so do a line check with B and A
+            return line([b, a])
+        else:
+            # If both checks fail, then we must be inside the triangle!
+            # We're done with 2D! (more needed in 3D)
+            return s, ao[:2], True
+
+def nearest_simplex(s):
     """Builds out the simplex by finding the next support point in a given direction"""
-    match len(simplex_data):
+    match len(s):
         case 2:
             # If our current support has two points, find the third point 
-            return build_from_line(simplex_data)
+            return line(s)
         case 3:
             # If our current support has 3 points, swap one out with one closer to origin
-            return False
+            return triangle(s)
         case default:
             # Shouldn't be reached
             raise ValueError("Recieved a support simplex with >3 points!")
@@ -123,39 +184,40 @@ def GJK(a, b):
 
     # Create our simplex, as a list of points
     # Because it is a simplex, the number of points will never exceed 3 (maybe use np array for this?)
-    points = [next_support]
+    s = [next_support]
 
     # Our next direction will be in the direction of the origin
     dir = -next_support
 
     # Some python nonsense, our helper functions will change the data referenced here
     # Consider making this a class?
-    simplex_data = {'points': points, 'dir': dir}
+    # simplex_data = {'points': s, 'dir': dir}
 
     vis(a, b, diff, next_support[np.newaxis, :])
 
     while True:
-        next_support = support(a, b, simplex_data['dir'])
+        next_support = support(a, b, dir)
 
         # If the next closest support point is not in the direction of the origin,
         # Then we know our difference will never cover the origin, we are as close we can get!
-        if np.dot(next_support, simplex_data['dir']) <= 0:
+        if np.dot(next_support, dir) <= 0:
             return False
 
-        # Otherwise, we must further build our simplex by either:
-        #   adding a point to make a line
-        #   adding a point to make a simplex (tri)
-        #   swapping a point on our simplex with a new one
-        simplex_data['points'].append(next_support)
+        # Otherwise, add it to our simplex and continue
+        # NOTE: this algorithm is prone to infinite loops,
+        #       which occur if the same support points are repeatedly added
+        #       I did NOT check for this, but works with my two tests
+        s.append(next_support)
 
-        vis(a, b, diff, np.array(simplex_data['points']))
+        vis(a, b, diff, np.array(s))
+
+        s, dir, contains_origin = nearest_simplex(s)
 
         # If the newly created simplex covers the origin, return true
-        if next_simplex(simplex_data):
+        if contains_origin:
             return True
 
         # Otherwise, try again with the data set by next_simplex
-        return False
 
 
 def main():
@@ -167,7 +229,7 @@ def main():
     # print(test)
     # vis(a, b, diff, test)
 
-    GJK(a, b)
+    print(GJK(a, b))
 
 if __name__ == "__main__":
     main()
