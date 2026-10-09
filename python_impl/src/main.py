@@ -171,13 +171,11 @@ def triangle(s):
             return s, ao[:2], True
 
 def nearest_simplex(s):
-    """Builds out the simplex by finding the next support point in a given direction"""
+    """Determines the next search direction and simplex in dir of the origin"""
     match len(s):
         case 2:
-            # If our current support has two points, find the third point 
             return line(s)
         case 3:
-            # If our current support has 3 points, swap one out with one closer to origin
             return triangle(s)
         case default:
             # Shouldn't be reached
@@ -196,10 +194,6 @@ def GJK(a, b):
 
     # Our next direction will be in the direction of the origin
     dir = -next_support
-
-    # Some python nonsense, our helper functions will change the data referenced here
-    # Consider making this a class?
-    # simplex_data = {'points': s, 'dir': dir}
 
     vis(a, b, diff, next_support[np.newaxis, :], dir)
 
@@ -229,7 +223,7 @@ def GJK(a, b):
 
 
 def main():
-    a, b = read_input('tri_square_col.txt')
+    a, b = read_input('tri_square_sep.txt')
 
     # diff = minkowski_difference(a, b)
 
