@@ -110,7 +110,7 @@ def line(s):
         dir = np.cross(np.cross(ab, ao), ab)
 
         # Edge case: if the cross product is zero, then the origin is on this line! We're done!
-        if np.sum(dir) == 0:
+        if np.all(dir == 0):
             return s, ao, True
 
         # Before returning, make the direction 2D again. I think dropping the Z value should always be fine? I think its always 0
@@ -187,6 +187,7 @@ def nearest_simplex(s):
 
 def GJK(a, b):
     """The implementation of the GJK algorithm"""
+    # TODO: point to point does not work :( 
     diff = minkowski_difference(a, b)
 
     # Create the first support point, by looking in any direction (here it is [1,0])
@@ -197,6 +198,7 @@ def GJK(a, b):
     s = [next_support]
 
     # Our next direction will be in the direction of the origin
+    # Might need to handle if the first point is the origin (see initial dir=[1,0], using tri_square_p2p)
     dir = -next_support
 
     vis(a, b, diff, next_support[np.newaxis, :], dir)
@@ -206,7 +208,7 @@ def GJK(a, b):
 
         # If the next closest support point is not in the direction of the origin,
         # Then we know our difference will never cover the origin, we are as close we can get!
-        if np.dot(next_support, dir) <= 0:
+        if np.dot(next_support, dir) < 0:
             return False
 
         # Otherwise, add it to our simplex and continue
@@ -227,7 +229,7 @@ def GJK(a, b):
 
 
 def main():
-    a, b = read_input('tri_square_p2e.txt')
+    a, b = read_input('tri_square_p2p.txt')
 
     # diff = minkowski_difference(a, b)
 
