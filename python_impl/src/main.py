@@ -109,7 +109,11 @@ def line(s):
         ao = np.append(ao, 0)
         dir = np.cross(np.cross(ab, ao), ab)
 
-        # Before returning, make the direction 2D again. I think removing the Z value should always be fine? I think its always 0
+        # Edge case: if the cross product is zero, then the origin is on this line! We're done!
+        if dir[0] * dir[1] * dir[2] == 0:
+            return s, ao, True
+
+        # Before returning, make the direction 2D again. I think dropping the Z value should always be fine? I think its always 0
         assert(dir[2] == 0)
         dir = dir[:2]
     else:
@@ -223,7 +227,7 @@ def GJK(a, b):
 
 
 def main():
-    a, b = read_input('tri_square_sep.txt')
+    a, b = read_input('tri_square_e2e.txt')
 
     # diff = minkowski_difference(a, b)
 
