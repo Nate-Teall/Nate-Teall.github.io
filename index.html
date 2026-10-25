@@ -1,4 +1,89 @@
-<h1>Hello World</h1>
+<h1>The Gilbert-Johnson-Keerthi Algorithm</h1>
+<h2>Linear Time Collision Detection of Convex Polygons</h2>
+
+<br/>
+
+<h3>Description</h3>
 <p>
-    Text
+    The Gilbert-Johnson-Keerthi (GJK) Algorithm is a popular algorithm used for collision detection between convex shapes in both 2D and 3D. 
+    The algorithm runs in very little time with a small amount of space, making it ideal for video games and physics simulations. 
+    Below is a description of the algorithm and an interactive visualization to see it running. 
+</p>
+
+<h3>General Methods</h3>
+<p>
+    The GJK Algorithm is built on a concept called the "Minkowski Difference". 
+    This is calculated by finding the difference between each pair of points between two polygons, and finding the convex hull of the resulting points.
+</p>
+<img src="img/separate.png"/>
+<p>
+    The Minkowski Difference of two polygons covers the origin if and only if the two polygons intersect.
+    This is clear because if the two polygons overlap, then they share at least one point. The shared point is then subtracted from itself, result in the zero vector.
+</p>
+<img src="img/collision.png"/>
+
+<p>
+    However, calculating this difference is far too complex, as it requires (a * b) number of calculations.
+    Instead, we will rely on a support function, that will provide us with one point on the hull of the Minkowski Difference.
+    Notably, points on the hull of the Minkowski difference are the ones with the highest magnitude, meaning they are a result of subracting two points on A and B that are very far away from each other.
+    So, our support function will choose a direction, and subtract two points: The point on A furthest in that direction, and a point on B furthest in the opposite direction: 
+</p>
+<img src="img/support.png"/>
+<p>
+    Now, we can find just one point on the Minkowski Difference, with only (a + b) calculations!
+    Lastly, we need to use this function to build out a simplex of support points. 
+    Because we want to find out if the difference covers the origin, our search direction will always be toward the origin.
+    Now, instead of checking the entire Minkowski Difference, we only need to check if our support simplex covers the origin.
+</p>
+
+<h3>Outline</h3>
+<p>
+    Below is a general outline of the algorithm.
+</p>
+<p style="font-family:'Courier New'">
+    def GJK(a, b):
+    <ol style="font-family:'Courier New'">
+        <li>Choose an arbitrary search direction</li>
+        <li>simplex = support(dir)</li>
+        <li>dir = direction from our point to origin</li>
+        <li>Loop:
+            <ol>
+                <li>next point = support(dir)</li>
+                <li>if next point is not in the direction of the origin, reject</li>
+                <li>otherwise, add next point to our simplex</li>
+                <li>contains_origin, dir = update_simplex(simplex)</li>
+                <li>if contains_origin, accept</li>
+            </ol>
+        </li>
+    </ol>
+</p>
+
+<p>The update_simplex function will check if the current simplex covers the origin, and if not, finds the next direction to search in.</p>
+
+<p style="font-family:'Courier New'">
+    def update_simplex(simplex): 
+    <ol style="font-family:'Courier New'">
+        <li>if simplex only has two points (is a line):
+            <ol>
+                <li>dir = direction from the line to the origin</li>
+                <li>return (False, dir)</li>
+            </ol>
+        </li>
+        <li>if simplex has three points (triangle ABC, where A is the newest point, closest to origin):</li>
+        <ol>
+            <li>if origin is outside line AB, 
+                <ol>
+                    <li>dir = direction from line AB to origin</li>
+                    <li>remove C from simplex, return (False, dir)</li>
+                </ol>
+            </li>
+            <li>if origin is outside line AC, 
+                <ol>
+                    <li>dir = direction from line AC to origin</li>
+                    <li>remove B from simplex, return (False, dir)</li>
+                </ol>
+            </li>
+            <li>Otherwise, origin must be inside all three sides, return True</li>
+        </ol>
+    </ol>
 </p>
