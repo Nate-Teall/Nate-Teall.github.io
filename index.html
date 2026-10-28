@@ -15,12 +15,12 @@
     The GJK Algorithm is built on a concept called the "Minkowski Difference". 
     This is calculated by finding the difference between each pair of points between two polygons, and finding the convex hull of the resulting points.
 </p>
-<img src="img/separate.png"/>
+<img src="img/separate2.png"/>
 <p>
     The Minkowski Difference of two polygons covers the origin if and only if the two polygons intersect.
     This is clear because if the two polygons overlap, then they share at least one point. The shared point is then subtracted from itself, result in the zero vector.
 </p>
-<img src="img/collision.png"/>
+<img src="img/collision2.png"/>
 
 <p>
     However, calculating this difference is far too complex, as it requires (a * b) number of calculations.
@@ -33,7 +33,15 @@
     Now, we can find just one point on the Minkowski Difference, with only (a + b) calculations!
     Lastly, we need to use this function to build out a simplex of support points. 
     Because we want to find out if the difference covers the origin, our search direction will always be toward the origin.
+    We keep keep checking a new support point either to make a full simplex or replace a previous point on the simplex
+    until we either contain the origin, or we never make it past the origin in some direction.
     Now, instead of checking the entire Minkowski Difference, we only need to check if our support simplex covers the origin.
+</p>
+<img src="img/simplex collision.png"/>
+<img src="img/simplex separate.png"/>
+<p>
+    In the example with the separate polygons, the algorithm could not find a point past the origin in the new direction, 
+    so it knew there was no collision after only three support point checks
 </p>
 
 <h3>Outline</h3>
